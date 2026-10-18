@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>КИС — Тренажёр</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+    --accent:#4f46e5; --accent2:#6366f1; --green:#16a34a; --green-bg:#dcfce7;
+    --red:#dc2626; --red-bg:#fee2e2; --border:#e5e7eb; --shadow:0 6px 20px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+  }
+  .wrap{max-width:900px; margin:0 auto; padding:24px 16px 60px}
+  header.top{display:flex; align-items:center; gap:12px; margin-bottom:24px}
+  header.top h1{font-size:22px; margin:0}
+  .back{
+    background:none; border:1px solid var(--border); color:var(--text);
+    padding:8px 14px; border-radius:10px; cursor:pointer; font-size:14px;
+  }
+  .back:hover{background:#eef2ff; border-color:#c7d2fe}
+  .subtitle{color:var(--muted); font-size:14px; margin:4px 0 20px}
+
+  /* Карточки вопросов */
+  .grid{display:grid; gap:14px}
+  .qcard{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:18px 20px; cursor:pointer; box-shadow:var(--shadow);
+    transition:transform .12s ease, border-color .12s ease;
+    display:flex; align-items:center; gap:14px;
+  }
+  .qcard:hover{transform:translateY(-2px); border-color:#c7d2fe}
+  .qnum{
+    flex:0 0 44px; height:44px; border-radius:12px; display:grid; place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff;
+    font-weight:700; font-size:18px;
+  }
+  .qcard h3{margin:0; font-size:16px; line-height:1.35}
+
+  /* Уровни */
+  .levels{display:grid; gap:14px; grid-template-columns:1fr 1fr}
+  @media(max-width:640px){ .levels{grid-template-columns:1fr} }
+  .levelcard{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px; cursor:pointer; box-shadow:var(--shadow); transition:transform .12s ease;
+  }
+  .levelcard:hover{transform:translateY(-2px); border-color:#c7d2fe}
+  .levelcard .tag{font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--accent)}
+  .levelcard h3{margin:8px 0 6px}
+  .levelcard p{margin:0; color:var(--muted); font-size:14px}
+
+  /* Общее для уровней */
+  .panel{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px; box-shadow:var(--shadow);
+  }
+  .prompt{font-size:15px; color:var(--muted); margin:0 0 10px}
+  .target{font-size:17px; line-height:1.6; margin:0 0 18px}
+  .target b{color:var(--accent)}
+
+  /* Уровень 1: слова */
+  .answer-area{
+    min-height:56px; border:2px dashed var(--border); border-radius:12px;
+    padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start;
+    background:#fafafa; margin-bottom:16px;
+  }
+  .answer-area.ok{border-color:var(--green); background:var(--green-bg)}
+  .answer-area.bad{border-color:var(--red); background:var(--red-bg)}
+  .word{
+    background:#fff; border:1px solid var(--border); border-radius:10px;
+    padding:8px 12px; cursor:pointer; user-select:none; font-size:15px;
+    transition:background .1s ease, border-color .1s ease, opacity .1s ease;
+  }
+  .word:hover{border-color:#c7d2fe; background:#eef2ff}
+  .word.placed{background:#eef2ff; border-color:#c7d2fe}
+  .word.locked{opacity:.35; cursor:default}
+  .word.placed.correct{background:var(--green-bg); border-color:var(--green); color:var(--green)}
+  .word.placed.wrong{background:var(--red-bg); border-color:var(--red); color:var(--red)}
+  .pool{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px}
+  .actions{display:flex; gap:10px; flex-wrap:wrap}
+  button.btn{
+    border:none; border-radius:12px; padding:12px 18px; font-size:15px; cursor:pointer;
+    font-weight:600;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff}
+  .btn-primary:hover{opacity:.92}
+  .btn-ghost{background:#fff; border:1px solid var(--border); color:var(--text)}
+  .btn-ghost:hover{background:#f3f4f6}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+
+  .result{margin-top:16px; font-weight:600; display:none}
+  .result.show{display:block}
+  .result.ok{color:var(--green)}
+  .result.bad{color:var(--red)}
+
+  /* Уровень 2: ввод */
+  .input-label{font-size:17px; line-height:1.6; margin-bottom:12px}
+  textarea{
+    width:100%; min-height:140px; resize:vertical; border:2px solid var(--border);
+    border-radius:12px; padding:14px; font-size:16px; font-family:inherit; line-height:1.6;
+    background:#fafafa;
+  }
+  textarea:focus{outline:none; border-color:#c7d2fe; background:#fff}
+  textarea.ok{border-color:var(--green); background:var(--green-bg)}
+  textarea.bad{border-color:var(--red); background:var(--red-bg)}
+  .hint{color:var(--muted); font-size:13px; margin-top:10px}
+  .diff{
+    margin-top:14px; background:#fff7ed; border:1px solid #fed7aa; border-radius:12px;
+    padding:14px; font-size:14px; line-height:1.6; display:none;
+  }
+  .diff.show{display:block}
+  .diff .expected{color:var(--muted)}
+  .diff mark{background:#fef08a; color:#854d0e; padding:0 2px; border-radius:3px}
+  .diff .missing{color:var(--red)}
+
+  .badge{display:inline-block; font-size:12px; background:#eef2ff; color:var(--accent);
+    border-radius:999px; padding:4px 10px; font-weight:700; margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <button class="back" id="backBtn" style="display:none" onclick="goBack()">← Назад</button>
+    <h1 id="pageTitle">Корпоративная информационная система — тренажёр</h1>
+  </header>
+
+  <main id="app"></main>
+</div>
+
+<script>
+/* ============================================================
+   ДАННЫЕ
+   ============================================================ */
+const QUESTIONS = [
+  {
+    id: "q1",
+    title: "1. Корпоративная информационная система. Требования, предъявляемые к КИС.",
+    definition: "Корпоративная информационная система — это открытая интегрированная автоматизированная система реального времени, предназначенная для автоматизации бизнес-процессов компании всех уровней, включая процессы принятия управленческих решений."
+  },
+  {
+    id: "q2",
+    title: "2. Концепция построения корпоративных информационных систем в экономике.",
+    definition: "Концепция построения КИС — это идея о том, из каких основных частей должна состоять система, чтобы автоматизировать работу предприятия."
+  },
+  {
+    id: "q3",
+    title: "3. Классификация корпоративных информационных систем. Основные характеристики корпоративных информационных систем.",
+    definition: "Полный цикл управления — система поддерживает нормирование, планирование, учёт, анализ и регулирование деятельности предприятия."
+  },
+  {
+    id: "q4",
+    title: "4. Задачи, решаемые корпоративными информационными системами. Основные стандарты построения КИС.",
+    definition: "Формирование отчётных показателей — подготовка отчётов на основе бухгалтерских и статистических данных."
+  },
+  {
+    id: "q5",
+    title: "5. Уровни управления деятельностью корпорации",
+    definition: "Стратегический уровень — системы поддержки принятия решений, уровень руководства предприятия, принимающего стратегические долгосрочные решения, которые определяют основные направления деятельности предприятия на длительные периоды."
+  }
+];
+
+/* ============================================================
+   СОСТОЯНИЕ
+   ============================================================ */
+let state = { screen: "home", qIndex: null, level: null };
+
+const app = document.getElementById("app");
+const backBtn = document.getElementById("backBtn");
+const pageTitle = document.getElementById("pageTitle");
+
+/* ============================================================
+   НАВИГАЦИЯ
+   ============================================================ */
+function goHome(){
+  state = { screen:"home", qIndex:null, level:null };
+  backBtn.style.display = "none";
+  pageTitle.textContent = "Корпоративная информационная система — тренажёр";
+  renderHome();
+}
+function goQuestion(idx){
+  state = { screen:"question", qIndex:idx, level:null };
+  backBtn.style.display = "inline-block";
+  pageTitle.textContent = QUESTIONS[idx].title;
+  renderQuestion();
+}
+function goLevel(level){
+  state.level = level;
+  backBtn.style.display = "inline-block";
+  pageTitle.textContent = "Вопрос " + (state.qIndex+1) + " — Уровень " + level;
+  if(level === 1) renderLevel1();
+  else renderLevel2();
+}
+function goBack(){
+  if(state.screen === "level"){ state.screen = "question"; goQuestion(state.qIndex); }
+  else { goHome(); }
+}
+
+/* ============================================================
+   ГЛАВНАЯ
+   ============================================================ */
+function renderHome(){
+  app.innerHTML = `
+    <p class="subtitle">Выберите вопрос для изучения. Уровень 1 — заучивание наизусть (сборка из слов). Уровень 2 — отработка (ввод ответа текстом).</p>
+    <div class="grid">
+      ${QUESTIONS.map((q,i)=>`
+        <div class="qcard" onclick="goQuestion(${i})">
+          <div class="qnum">${i+1}</div>
+          <h3>${escapeHtml(q.title)}</h3>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+/* ============================================================
+   СТРАНИЦА ВОПРОСА — ВЫБОР УРОВНЯ
+   ============================================================ */
+function renderQuestion(){
+  const q = QUESTIONS[state.qIndex];
+  app.innerHTML = `
+    <div class="panel">
+      <span class="badge">Вопрос ${state.qIndex+1}</span>
+      <h2 style="margin:0 0 6px; font-size:20px">${escapeHtml(q.title)}</h2>
+      <p class="prompt">Выберите уровень отработки:</p>
+      <div class="levels">
+        <div class="levelcard" onclick="goLevel(1)">
+          <div class="tag">Уровень 1</div>
+          <h3>Заучивание наизусть</h3>
+          <p>Соберите определение из слов в правильном порядке (как в Duolingo).</p>
+        </div>
+        <div class="levelcard" onclick="goLevel(2)">
+          <div class="tag">Уровень 2</div>
+          <h3>Отработка</h3>
+          <p>Введите ответ текстом в точь-в-точь, как в эталоне.</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   УРОВЕНЬ 1 — СБОРКА ИЗ СЛОВ
+   ============================================================ */
+let l1 = null;
+
+function tokenize(text){
+  // разбиваем по пробелам, сохраняя пунктуацию внутри токена
+  return text.split(/\s+/).filter(Boolean);
+}
+
+function renderLevel1(){
+  const q = QUESTIONS[state.qIndex];
+  const tokens = tokenize(q.definition);
+  const shuffled = shuffle([...tokens]);
+
+  l1 = {
+    tokens: tokens,        // правильный порядок
+    pool: shuffled.map((w,i)=>({ id: i, word: w, used: false })),
+    placed: [],            // индексы выбранных из pool
+    checked: false
+  };
+
+  app.innerHTML = `
+    <div class="panel">
+      <span class="badge">Уровень 1 — Заучивание</span>
+      <p class="prompt">Соберите определение, нажимая на слова в правильном порядке:</p>
+      <div class="target">${escapeHtml(q.title)}</div>
+
+      <div id="answerArea" class="answer-area"></div>
+      <div id="poolArea" class="pool"></div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="checkBtn" onclick="checkLevel1()">Проверить</button>
+        <button class="btn btn-ghost" onclick="resetLevel1()">Сбросить</button>
+        <button class="btn btn-ghost" onclick="goLevel(2)">Перейти на уровень 2 →</button>
+      </div>
+      <div id="l1result" class="result"></div>
+    </div>
+  `;
+  renderL1();
+}
+
+function renderL1(){
+  const answerArea = document.getElementById("answerArea");
+  const poolArea = document.getElementById("poolArea");
+  answerArea.innerHTML = "";
+  poolArea.innerHTML = "";
+
+  // Размещённые слова
+  l1.placed.forEach((pidx, pos)=>{
+    const item = l1.pool[pidx];
+    const el = document.createElement("div");
+    el.className = "word placed";
+    el.textContent = item.word;
+    if(l1.checked){
+      if(item.word === l1.tokens[pos]) el.classList.add("correct");
+      else el.classList.add("wrong");
+    } else {
+      el.onclick = ()=> removePlaced(pos);
+    }
+    answerArea.appendChild(el);
+  });
+
+  // Пул
+  l1.pool.forEach((item, idx)=>{
+    if(item.used) return;
+    const el = document.createElement("div");
+    el.className = "word";
+    el.textContent = item.word;
+    if(!l1.checked) el.onclick = ()=> placeWord(idx);
+    else el.classList.add("locked");
+    poolArea.appendChild(el);
+  });
+
+  if(l1.checked){
+    answerArea.classList.add(l1.isCorrect ? "ok" : "bad");
+  }
+}
+
+function placeWord(poolIdx){
+  if(l1.checked) return;
+  l1.pool[poolIdx].used = true;
+  l1.placed.push(poolIdx);
+  renderL1();
+}
+function removePlaced(pos){
+  if(l1.checked) return;
+  const poolIdx = l1.placed.splice(pos,1)[0];
+  l1.pool[poolIdx].used = false;
+  renderL1();
+}
+function checkLevel1(){
+  if(l1.placed.length === 0){ return; }
+  l1.checked = true;
+  const attempt = l1.placed.map(i=>l1.pool[i].word);
+  l1.isCorrect = attempt.length === l1.tokens.length &&
+                 attempt.every((w,i)=> w === l1.tokens[i]);
+  renderL1();
+  const res = document.getElementById("l1result");
+  res.className = "result show " + (l1.isCorrect ? "ok" : "bad");
+  if(l1.isCorrect){
+    res.textContent = "✅ Верно! Определение собрано правильно.";
+  } else {
+    res.textContent = "❌ Пока неверно. Зелёные слова на своих местах, красные — нет. Нажмите «Сбросить» и попробуйте снова.";
+  }
+}
+function resetLevel1(){ renderLevel1(); }
+
+/* ============================================================
+   УРОВЕНЬ 2 — ВВОД ТЕКСТА
+   ============================================================ */
+function renderLevel2(){
+  const q = QUESTIONS[state.qIndex];
+  app.innerHTML = `
+    <div class="panel">
+      <span class="badge">Уровень 2 — Отработка</span>
+      <p class="prompt">Введите определение в точь-в-точь, как в эталоне:</p>
+      <div class="input-label"><b>${escapeHtml(q.title)}</b></div>
+      <div style="margin-bottom:10px; color:var(--muted); font-size:15px">
+        ${escapeHtml(q.definition.split("—")[0].trim())} — <span style="color:var(--text)">…</span>
+      </div>
+      <textarea id="answerInput" placeholder="Введите ответ здесь..."></textarea>
+      <div class="hint">Сравнение строгое: учитываются все слова, знаки препинания и порядок. Регистр букв не важен.</div>
+
+      <div class="actions" style="margin-top:14px">
+        <button class="btn btn-primary" onclick="checkLevel2()">Проверить</button>
+        <button class="btn btn-ghost" onclick="resetLevel2()">Сбросить</button>
+        <button class="btn btn-ghost" onclick="goLevel(1)">← На уровень 1</button>
+      </div>
+      <div id="l2result" class="result"></div>
+      <div id="l2diff" class="diff"></div>
+    </div>
+  `;
+}
+
+function normalize(s){
+  return s.replace(/\s+/g," ").trim().toLowerCase();
+}
+
+function checkLevel2(){
+  const q = QUESTIONS[state.qIndex];
+  const input = document.getElementById("answerInput");
+  const val = input.value;
+  const res = document.getElementById("l2result");
+  const diffBox = document.getElementById("l2diff");
+
+  const ok = normalize(val) === normalize(q.definition);
+
+  input.classList.remove("ok","bad");
+  res.className = "result show " + (ok ? "ok" : "bad");
+  diffBox.className = "diff";
+
+  if(ok){
+    input.classList.add("ok");
+    res.textContent = "✅ Верно! Ответ совпадает с эталоном.";
+    diffBox.style.display = "none";
+  } else {
+    input.classList.add("bad");
+    res.textContent = "❌ Ответ не совпадает с эталоном. Ниже — эталон и подсветка отличий.";
+    diffBox.style.display = "block";
+    diffBox.innerHTML = `
+      <div style="font-weight:700; margin-bottom:8px">Эталон:</div>
+      <div class="expected">${highlightDiff(val, q.definition)}</div>
+      <div style="margin-top:10px; font-size:13px; color:var(--muted)">
+        <mark>жёлтым</mark> — слова из вашего ответа, которых нет в эталоне на этом месте;
+        <span class="missing">красным</span> — слова эталона, которых не хватает.
+      </div>
+    `;
+  }
+}
+
+/* Простая подсветка различий по словам (LCS-подобная) */
+function highlightDiff(userText, expected){
+  const u = tokenize(userText);
+  const e = tokenize(expected);
+  // используем простой алгоритм LCS для выравнивания
+  const m = u.length, n = e.length;
+  const dp = Array.from({length:m+1}, ()=> new Array(n+1).fill(0));
+  for(let i=m-1;i>=0;i--){
+    for(let j=n-1;j>=0;j--){
+      dp[i][j] = normalize(u[i]) === normalize(e[j])
+        ? dp[i+1][j+1] + 1
+        : Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  let i=0,j=0, out=[];
+  while(i<m && j<n){
+    if(normalize(u[i]) === normalize(e[j])){
+      out.push(escapeHtml(e[j])); i++; j++;
+    } else if(dp[i+1][j] >= dp[i][j+1]){
+      out.push(`<mark>${escapeHtml(u[i])}</mark>`); i++;
+    } else {
+      out.push(`<span class="missing">${escapeHtml(e[j])}</span>`); j++;
+    }
+  }
+  while(i<m){ out.push(`<mark>${escapeHtml(u[i])}</mark>`); i++; }
+  while(j<n){ out.push(`<span class="missing">${escapeHtml(e[j])}</span>`); j++; }
+  return out.join(" ");
+}
+
+function resetLevel2(){ renderLevel2(); }
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+function escapeHtml(s){
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+/* ============================================================
+   СТАРТ
+   ============================================================ */
+goHome();
+</script>
+</body>
+</html>
